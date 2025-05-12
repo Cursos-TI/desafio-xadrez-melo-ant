@@ -229,11 +229,65 @@ void exibirOpcoes(){
     printf("===========================\n");
 };
 
+int verificarMovimento(peca* X, int xAtual, int yAtual, int xAlvo, int yAlvo) {
+    //peca* X, -> objeto da peca
+    //int xAtual, -> posicao atual
+    //int yAtual, -> posicial atual
+    //int xAlvo, -> posicao desejada
+    //int yAlvo -> posicao desejada
+    //pegue o código da peça(que determina qual o movimento dela)]
+    //verificar se a coordenada inputada é valida com base no tipo da peça
+    //esse bloco não se responsabiliza se o espaço está vago , apenas se ele está
+    //lógicamente correto
+    //estou desconsiderando a regra de colisão, que diz que uma peça não pode passar por cima da outra
+    //meu objetivo é simular apenas o movimento
+    if (xAtual < 0 || yAtual < 0 || xAlvo < 0 || yAlvo < 0 || xAlvo > BOARD_WIDTH - 1 || yAlvo > BOARD_HEIGTH - 1) {
+        return 0; //inválido
+    }
+
+    switch (X->cod) {
+        case PEAO:
+            // se permanecer na mesma coluna
+            // e se estiver se movendo apenas uma casa
+            // estou desconsiderando a regra que no
+            //começo eles aindam mais de uma casa
+
+            return ((xAtual == xAlvo) && (abs(yAtual - yAlvo) == 1)) ? 1 : 0;
+            break;
+
+        case CAVALO:
+            return ((abs(xAtual - xAlvo) == 1) && (abs(yAtual - yAlvo) == 2) || (abs(xAtual - xAlvo) == 2) && (abs(yAtual - yAlvo) == 1)) ? 1 : 0;
+            break;
+
+        case BISPO:
+            // Movimento do Bispo: Diagonal
+            return (abs(xAlvo - xAtual) == abs(yAlvo - yAtual)) ? 1 : 0;
+            break;
+
+        case TORRE:
+            // Movimento da Torre: Horizontal ou Vertical
+            return (xAtual == xAlvo || yAtual == yAlvo) ? 1 : 0;
+            break;
+
+        case RAINHA:
+            // Movimento da Rainha: Diagonal ou Horizontal ou Vertical
+            return (abs(xAlvo - xAtual) == abs(yAlvo - yAtual) || xAtual == xAlvo || yAtual == yAlvo) ? 1 : 0;
+            break;
+
+        case REI:
+            // Movimento do Rei: Uma casa em qualquer direção
+            return (abs(xAlvo - xAtual) <= 1 && abs(yAlvo - yAtual) <= 1) ? 1 : 0;
+            break;
+    }
+    return 0;
+}
+
 int main(){
     //iniciar tabuleiro
     //descomente se estiver rodando no windowns
     //SetConsoleOutputCP(CP_UTF8);
-    
+    int xAtual = 0;
+    int yAtual = 0;
     int opcoes = 0;
     int sair = 1;
     int opt = 0;
@@ -342,10 +396,43 @@ int main(){
                                         printf(Jogo.tabuleiro[intArray[0]][intArray[1]]<0?"Selecione pecas pretas":"Selecione pecas brancas");
                                     }
                                     if(pecaCod.cor == (Jogo.turnoAtual % 2 ==0?1:0)){
+                                        xAtual = intArray[0];
+                                        yAtual = intArray[1];
                                         printf("Digite para onde você quer mover sua peça\n");
                                         printf("Digite a coordenada x e y no formato x_y\n=> ");
                                         // ... (Código para obter a nova coordenada)
-                                    }
+                                        // exibir uma explicação do movimento, e mostrar opções válidas para se mover
+                                        ic = 0;
+                                        if (fgets(line, sizeof(line), stdin)){
+                                            if (1 == sscanf(line, "%d", &iz)){
+                                                strncpy(str, line, sizeof(str) - 1); // Usar strncpy
+                                                str[sizeof(str) - 1] = '\0'; 
+                                                    token = strtok(str, "_");
+                               
+                                             // Loop para obter todos os tokens
+                                            while (token != NULL) {
+                                                remove_spaces(token);
+                                                intArray[ic] = atoi(token);
+                                                ic++;
+                                                token = strtok(NULL, "_");
+                                            };
+                                            if ( verificarMovimento(&pecaCod, xAtual, yAtual, intArray[0], intArray[1]) == 1){
+                                                printf("\n ==> Movendo ");
+                                                printf(pecas[pecaCod.cod]);
+                                                printf(" '");
+                                                printf(Jogo.tabuleiro[xAtual][yAtual]<0?"PRETA":"BRANCA");
+                                                printf("' para : (%d , %d) \n",intArray[0], intArray[1]);
+                                                //PROVAVELMENTE A LÓGICA DE CAPTURA VIRIA AQUI, DEPOIS IMPLEMENTAREI
+                                                //eu posso fazer um loop para contar as peças de cada lado, depois editar a propriedade 'capturada'
+                                                Jogo.tabuleiro[intArray[0]][intArray[1]] = Jogo.tabuleiro[xAtual][yAtual];
+                                                Jogo.tabuleiro[xAtual][yAtual] = 0;
+                                                
+                                            
+                                            }else{
+                                                printf("\033[1;31mMovimento inválido\033[0m\n");
+                                            };};
+                                        };
+                                        };
                                 } else {
                                     printf("Movimento inválido\n");
                                 }
