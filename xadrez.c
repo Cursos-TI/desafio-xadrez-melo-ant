@@ -3,18 +3,23 @@
 #include <conio.h>
 #include <string.h>
 #define LEN(arr) (sizeof(arr) / sizeof(arr[0]))
+//tabuleiro
 #define BOARD_HEIGTH 8
 #define BOARD_WIDTH 8
-#define PIECES_NAME {"PEAO","CAVALO","BISPO","TORRE","RAINHA","REI"}
+//pecas
+#define PIECES_NAME {"PEAO","CAVALO","BISPO","TORRE","RAINHA","REI"};
 #define PEAO 0
 #define CAVALO 1
 #define BISPO 2
 #define TORRE 3
 #define RAINHA 4
 #define REI 5
+//opcoes para menu
 #define SAIR_LOOP 0
 #define INSPECIONAR 1
-#include <Windows.h>
+#define MOVER 2
+//descomente se estiver rodando no windowns
+//#include <Windows.h>
 // Desafio de Xadrez - MateCheck
 // Este código inicial serve como base para o desenvolvimento do sistema de movimentação das peças de xadrez.
 // O objetivo é utilizar estruturas de repetição e funções para determinar os limites de movimentação dentro do jogo.
@@ -32,6 +37,7 @@ typedef struct Xadrez{
   peca pecasBrancas[17];
   peca pecasPretas[17];
   int* tabuleiro[BOARD_WIDTH];
+  int turnoAtual;
 }xadrez;
 
 peca criarPeca(int cod,int cor){
@@ -82,10 +88,10 @@ xadrez criarTabuleiro(){
             // Tratar erro de alocação de memória, se necessário
             perror("Erro ao alocar memória para a linha do tabuleiro");
             exit(EXIT_FAILURE);
-        }
-        for(int j = 0; j < BOARD_WIDTH; j++){
-            tabuleiroCompleto.tabuleiro[i][j] = 0;
-        }
+    };
+    for(int j = 0; j < BOARD_WIDTH; j++){
+        tabuleiroCompleto.tabuleiro[i][j] = 0;
+    };
   };
   /*
   0, 1, 2,  3 ,      4, 5, 6,   7
@@ -129,7 +135,7 @@ xadrez criarTabuleiro(){
     tabuleiroCompleto.tabuleiro[i][6] = -1;
   };
   
-
+  tabuleiroCompleto.turnoAtual = 0;
   return tabuleiroCompleto;
 };
 
@@ -178,6 +184,15 @@ void codEmEmoji(peca* X){
     };
 };
 
+void remove_spaces(char* s) {
+    char* d = s;
+    do {
+        while (*d == ' ') {
+            ++d;
+        }
+    } while (*s++ = *d++);
+};
+
 void exibirTabuleiro(xadrez Tabuleiro){
     int pecaPos, cor;
     peca pecaCod;
@@ -207,15 +222,17 @@ void exibirTabuleiro(xadrez Tabuleiro){
 
 void exibirOpcoes(){
     printf("===========================\n");
-    printf("Comando     Digite\n");
-    printf("Sair            0\n");
-    printf("Examinar peça   1\n");
+    printf("Comando     |   Digite\n");
+    printf("Sair              0\n");
+    printf("Examinar peça     1\n");
+    printf("Mover peça        2\n");
     printf("===========================\n");
 };
 
-int main() {
+int main(){
     //iniciar tabuleiro
-    SetConsoleOutputCP(CP_UTF8);
+    //descomente se estiver rodando no windowns
+    //SetConsoleOutputCP(CP_UTF8);
     
     int opcoes = 0;
     int sair = 1;
@@ -246,52 +263,103 @@ int main() {
                         char *token;
                         int intArray[2];
                         int ic = 0;
-                        printf("Digite cordenada x_cordenada y\n Exemplo 6_9 ou 0_7 para inspecionar\n a peça na casa correspondente \n=>");
+                        printf("Digite a coordenada x e y no formato x_y\n=> ");
                         if (fgets(line, sizeof(line), stdin)) {
                             if (1 == sscanf(line, "%d", &iz)) {
                                 strcpy(str,line);
                                 token = strtok(str, "_");
-
+                               
                                 // Loop para obter todos os tokens
                                 while (token != NULL) {
+                                    remove_spaces(token);
                                     // Converter o token para um inteiro e armazenar na array
                                     intArray[ic] = atoi(token);
                                     ic++;
                                     // Obter o próximo token
                                     token = strtok(NULL, "_");
-                                }
+                                };
                                 //Jogo.tabuleiro[intArray[0]][[intArray[1]]];
                                 peca pecaCod;
                                 printf("x : %d / y : %d\n",intArray[0],intArray[1]);
                                 if (intArray[0] < BOARD_WIDTH  && intArray[1] < BOARD_HEIGTH){
                                     if (Jogo.tabuleiro[intArray[0]][intArray[1]] != 0){
-                                    if ((Jogo.tabuleiro[intArray[0]][intArray[1]]<0?0:1) == 0){
-                                        pecaCod = Jogo.pecasPretas[abs(Jogo.tabuleiro[intArray[0]][intArray[1]])];
+                                        if ((Jogo.tabuleiro[intArray[0]][intArray[1]]<0?0:1) == 0){
+                                            pecaCod = Jogo.pecasPretas[abs(Jogo.tabuleiro[intArray[0]][intArray[1]])];
+                                        }else{
+                                            pecaCod = Jogo.pecasBrancas[Jogo.tabuleiro[intArray[0]][intArray[1]]];
+                                        };
+                                        printf("Codigo da Peca %d \n",pecaCod.cod);
+                                        printf("%s ",pecas[pecaCod.cod]);
+                                        printf(pecaCod.cor == 1?"BRANCO\n":"PRETO\n");
                                     }else{
-                                        pecaCod = Jogo.pecasBrancas[Jogo.tabuleiro[intArray[0]][intArray[1]]];
+                                        printf("Espaco vazio, nenhuma peca aqui\n");
                                     };
-                                    printf("Codigo da Peca %d \n",pecaCod.cod);
-                                    printf("%s ",pecas[pecaCod.cod]);
-                                    printf(pecaCod.cor == 1?"BRANCO\n":"PRETO\n");
-                                }else{
-                                    printf("Espaco vazio, nenhuma peca aqui\n");
-                                };
-                                
                                 }else{
                                     printf("Voce selecionou um index que invalido\n");
-                                }
+                                };
                                 
+                            };
+                        };
+                    break;
+                    
+                    case MOVER:
+                    ic = 0; // Reinicializar ic
+                    printf("Digite a coordenada de qual peca ");
+                    printf(Jogo.turnoAtual % 2 == 0?"branca ":"preta ");
+                    printf("você deseja mover\n");
+                    printf("Digite a coordenada x e y no formato x_y\n=> ");
+                    if (fgets(line, sizeof(line), stdin)){
+                        if (1 == sscanf(line, "%d", &iz)){
+                            strncpy(str, line, sizeof(str) - 1); // Usar strncpy
+                            str[sizeof(str) - 1] = '\0'; 
+                            token = strtok(str, "_");
+                               
+                            // Loop para obter todos os tokens
+                            while (token != NULL) {
+                                remove_spaces(token);
+                                intArray[ic] = atoi(token);
+                                ic++;
+                                token = strtok(NULL, "_");
                             }
-                        }
+                            peca pecaCod;
+                            printf("x : %d / y : %d\n", intArray[0], intArray[1]);
+                            // Verificação de limites reforçada
+                            if (intArray[0] >= 0 && intArray[0] < BOARD_WIDTH && intArray[1] >= 0 && intArray[1] < BOARD_HEIGTH){
+                                if (Jogo.tabuleiro[intArray[0]][intArray[1]] != 0){
+                                    if ((Jogo.tabuleiro[intArray[0]][intArray[1]]<0?0:1) == (Jogo.turnoAtual % 2 ==0?1:0)){
+                                        // Verificação de limites para pecasBrancas e pecasPretas
+                                        if (abs(Jogo.tabuleiro[intArray[0]][intArray[1]]) >= 1 && abs(Jogo.tabuleiro[intArray[0]][intArray[1]]) <= 16) {
+                                            if (Jogo.tabuleiro[intArray[0]][intArray[1]] < 0) {
+                                                pecaCod = Jogo.pecasPretas[abs(Jogo.tabuleiro[intArray[0]][intArray[1]])];
+                                            } else {
+                                                pecaCod = Jogo.pecasBrancas[Jogo.tabuleiro[intArray[0]][intArray[1]]];
+                                            }
+                                        } else {
+                                            printf("Erro: Índice da peça fora dos limites.\n");
+                                            continue; // Ou tratar o erro de outra forma
+                                        }
+                                    } else {
+                                        printf(Jogo.tabuleiro[intArray[0]][intArray[1]]<0?"Selecione pecas pretas":"Selecione pecas brancas");
+                                    }
+                                    if(pecaCod.cor == (Jogo.turnoAtual % 2 ==0?1:0)){
+                                        printf("Digite para onde você quer mover sua peça\n");
+                                        printf("Digite a coordenada x e y no formato x_y\n=> ");
+                                        // ... (Código para obter a nova coordenada)
+                                    }
+                                } else {
+                                    printf("Movimento inválido\n");
+                                }
+                            } else {
+                                printf("Voce selecionou um index que invalido\n");
+                            }
+                        }        
+                    }
                     break;
                 };
             };
         };
-    printf("codition check\n");
     }while(sair != 0);
-    printf("code finalized\n");
-    
-
+          
     //looping para escolher a posição da peça
     for(int z = 0;z < BOARD_HEIGTH;z++){
         free(Jogo.tabuleiro[z]);
