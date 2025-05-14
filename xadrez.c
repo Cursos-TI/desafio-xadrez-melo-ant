@@ -19,7 +19,14 @@
 #define INSPECIONAR 1
 #define MOVER 2
 //descomente se estiver rodando no windowns
-//#include <Windows.h>
+#include <Windows.h>
+
+// Códigos ANSI para cores
+
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+
 // Desafio de Xadrez - MateCheck
 // Este código inicial serve como base para o desenvolvimento do sistema de movimentação das peças de xadrez.
 // O objetivo é utilizar estruturas de repetição e funções para determinar os limites de movimentação dentro do jogo.
@@ -32,6 +39,13 @@ typedef struct Peca
   /*capturada = 0 para não, 1 para sim*/
   int cod, cor, capturada;
 }peca;
+
+//reaçar onde a peça do jogador passou
+typedef struct Colorido{
+    int x[12];
+    int y[12];
+    int max;
+}realce;
 
 typedef struct Xadrez{
   peca pecasBrancas[17];
@@ -159,27 +173,27 @@ void codEmEmoji(peca* X){
     {  
       case PEAO:
         /*printf(se branco?"|caracter unicode da peça branca : caractere unicode da peca preta);*/
-        printf(X->cor==1?"|\U00002659|":"|\U0000265F|");
+        printf(X->cor==1?"|\U00002659|":"|\033[1;31m\U0000265F\033[0m|");
       break;
       
       case CAVALO:
-        printf(X->cor==1?"|\U00002658|":"|\U0000265E|");
+        printf(X->cor==1?"|\U00002658|":"|\033[1;31m\U0000265E\033[0m|");
       break;
       
       case BISPO:
-        printf(X->cor==1?"|\U00002657|":"|\U0000265D|");
+        printf(X->cor==1?"|\U00002657|":"|\033[1;31m\U0000265D\033[0m|");
       break;
       
       case TORRE:
-        printf(X->cor==1?"|\U00002656|":"|\U0000265C|");
+        printf(X->cor==1?"|\U00002656|":"|\033[1;31m\U0000265C\033[0m|");
       break;
       
       case RAINHA:
-        printf(X->cor==1?"|\U00002655|":"|\U0000265B|");
+        printf(X->cor==1?"|\U00002655|":"|\033[1;31m\U0000265B\033[0m|");
       break;
       
       case REI:
-        printf(X->cor==1?"|\U00002654|":"|\U0000265A|");
+        printf(X->cor==1?"|\U00002654|":"|\033[1;31m\U0000265A\033[0m|");
       break;
     };
 };
@@ -193,9 +207,10 @@ void remove_spaces(char* s) {
     } while (*s++ = *d++);
 };
 
-void exibirTabuleiro(xadrez Tabuleiro){
+void exibirTabuleiro(xadrez Tabuleiro, int show, realce *reg){
     int pecaPos, cor;
     peca pecaCod;
+    
     printf("===========================\n");
     printf("|y||0||1||2||3||4||5||6||7| \n");
     for (int x = 0;x < BOARD_WIDTH;x++){
@@ -211,7 +226,27 @@ void exibirTabuleiro(xadrez Tabuleiro){
                 };
                 codEmEmoji(&pecaCod);
             }else{
-                printf("|_|");
+                if (show == 1){
+                    int k = 0;
+                    if (reg->max != 0){
+                        for(int pp =0;pp<reg->max;pp++){
+                        if (reg->x[pp] == x && reg->y[pp] == y){
+                            printf(ANSI_COLOR_YELLOW "|X|" ANSI_COLOR_RESET);
+                            k = 1;
+                            break;
+                        }
+                    };
+                    };
+                    
+                    if (k == 0){
+                        printf("|_|");
+                    }else{
+                        k = 0;
+                    }
+                }else{
+                    printf("|_|");
+                }
+                
             };
         };
         printf(" \n");
@@ -281,26 +316,76 @@ int verificarMovimento(peca* X, int xAtual, int yAtual, int xAlvo, int yAlvo) {
     }
     return 0;
 }
+//dif atual - alvo
+int movimentoRecursivo(int xAtual, int yAtual, int xAlvo, int yAlvo, int qtdCasas, realce * reg) {
+    
+    reg->x[qtdCasas] = xAtual;
+    reg->y[qtdCasas] = yAtual;
+
+    if (xAtual == xAlvo && yAtual == yAlvo) {
+        printf("\n<>fim do movimento<> - %d percorridas\n", qtdCasas);
+        reg->max = qtdCasas;
+        return 1;
+    }
+
+    if (xAtual < xAlvo) {
+        xAtual++;
+        printf("Direita ");
+        qtdCasas++;
+    } else if (xAtual > xAlvo) {
+        xAtual--;
+        printf("Esquerda ");
+        qtdCasas++;
+    }
+
+    if (yAtual < yAlvo) {
+        yAtual++;
+        printf("Cima ");
+        qtdCasas++;
+    } else if (yAtual > yAlvo) {
+        yAtual--;
+        printf("Baixo ");
+        qtdCasas++;
+    }
+    
+
+    return movimentoRecursivo(xAtual, yAtual, xAlvo, yAlvo, qtdCasas,reg);
+}
 
 int main(){
     //iniciar tabuleiro
     //descomente se estiver rodando no windowns
-    //SetConsoleOutputCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
     int xAtual = 0;
     int yAtual = 0;
     int opcoes = 0;
     int sair = 1;
     int opt = 0;
+    realce Registro;
+    for(int jj = 0;jj<12;jj++){
+        Registro.x[jj] = -1;
+        Registro.y[jj] = -1;
+    };
     char pecas[6][8] = PIECES_NAME;
     logo();
     xadrez Jogo = criarTabuleiro();
+    
     char line[200];
     int iz;
     
     do{
         printf("\n\n\n");
-        exibirTabuleiro(Jogo);
+        printf("Orientação do tabuleiro\n");
+        printf("    Esquerda\n");
+        printf("Baixo  ---  Cima\n");
+        printf("    Direita\n");
+        exibirTabuleiro(Jogo,1,&Registro);
         exibirOpcoes();
+        for(int jj = 0;jj<12;jj++){
+        Registro.x[jj] = -1;
+        Registro.y[jj] = -1;
+        };
+        
         
         if (fgets(line, sizeof(line), stdin)) {
             if (1 == sscanf(line, "%d", &iz)) {
@@ -393,7 +478,7 @@ int main(){
                                             continue; // Ou tratar o erro de outra forma
                                         }
                                     } else {
-                                        printf(Jogo.tabuleiro[intArray[0]][intArray[1]]<0?"Selecione pecas pretas":"Selecione pecas brancas");
+                                        printf(Jogo.tabuleiro[intArray[0]][intArray[1]]<0?"Selecione pecas brancas":"Selecione pecas pretas");
                                     }
                                     if(pecaCod.cor == (Jogo.turnoAtual % 2 ==0?1:0)){
                                         xAtual = intArray[0];
@@ -422,11 +507,17 @@ int main(){
                                                 printf(" '");
                                                 printf(Jogo.tabuleiro[xAtual][yAtual]<0?"PRETA":"BRANCA");
                                                 printf("' para : (%d , %d) \n",intArray[0], intArray[1]);
+
+
                                                 //PROVAVELMENTE A LÓGICA DE CAPTURA VIRIA AQUI, DEPOIS IMPLEMENTAREI
                                                 //eu posso fazer um loop para contar as peças de cada lado, depois editar a propriedade 'capturada'
                                                 Jogo.tabuleiro[intArray[0]][intArray[1]] = Jogo.tabuleiro[xAtual][yAtual];
                                                 Jogo.tabuleiro[xAtual][yAtual] = 0;
+                                                Jogo.turnoAtual++;
                                                 
+                                                //mostrar animação
+                                                movimentoRecursivo(xAtual,yAtual,intArray[0],intArray[1],0,&Registro);
+                                                //exibirTabuleiro(Jogo,1,&Registro);
                                             
                                             }else{
                                                 printf("\033[1;31mMovimento inválido\033[0m\n");
@@ -446,8 +537,8 @@ int main(){
             };
         };
     }while(sair != 0);
-          
-    //looping para escolher a posição da peça
+    
+    
     for(int z = 0;z < BOARD_HEIGTH;z++){
         free(Jogo.tabuleiro[z]);
     };
